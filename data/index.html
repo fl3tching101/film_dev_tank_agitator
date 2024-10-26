@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dev Tank Controller</title>
+    <meta name="description" content="Controls the film dev tank agitator" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <header class="container">
+      <hgroup style="margin: 0;">
+        <h1>Film Dev Tank Agitator</h1>
+      </hgroup>
+    </header>
+
+    <main class="container">
+        <label for="rotation_speed">
+            <p>Rotation Speed (&#37;)</p>
+            <input type="range" id="rotation_speed" name="rotation_speed" min="0" max="100" step="5" value="50">
+        </label>
+        <div class="grid">
+            <output id="rotation_speed_disp" style="text-align: center;">50%</output>
+        </div>
+
+        <label for="interval_time">
+            <p>Direction Duration (S)</p>
+            <input type="range" id="interval_time" name="interval_time" min="0" max="30" step="1" value="15">
+        </label>
+        <div class="grid">
+            <output id="interval_time_disp" style="text-align: center;">15s</output>
+        </div>
+
+        <br/>
+
+        <div class="grid">
+            <label role="button" id="start_button">
+                Start
+            </label>
+
+            <label role="button" id="stop_button">
+                Stop
+            </label>
+        </div>
+
+        <div class="grid">
+            <label role="button" id="save_button">
+                Save Settings
+            </label>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
