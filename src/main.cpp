@@ -3,6 +3,7 @@
 #include <Preferences.h>
 #include "SPIFFS.h"
 #include <AccelStepper.h>
+#include <ESPmDNS.h>
 
 #define LED_PIN   8
 
@@ -12,6 +13,7 @@
 // WiFi credentials (for station mode)
 const char *ssid = "ssid";
 const char *password = "password";
+const char *hostname = "dev_tank";
 
 // Stepper motor setup
 #define IN1_PIN 1
@@ -58,6 +60,15 @@ void setup() {
   Serial.println("Connected to WiFi");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+
+  // Initialize mDNS
+  if (!MDNS.begin(hostname)) {   // Set the hostname
+    Serial.println("Error setting up MDNS responder!");
+    while(1) {
+      delay(1000);
+    }
+  }
+  Serial.println("mDNS responder started");
 #else
   WiFi.softAP("Dev Tank", "film");
   Serial.println("Access Point Started");
