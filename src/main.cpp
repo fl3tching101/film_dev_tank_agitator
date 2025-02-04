@@ -16,10 +16,10 @@ const char *password = "password";
 const char *hostname = "dev_tank";
 
 // Stepper motor setup
-#define IN1_PIN 1
-#define IN2_PIN 2
-#define IN3_PIN 3
-#define IN4_PIN 4
+#define IN1_PIN 4
+#define IN2_PIN 3
+#define IN3_PIN 2
+#define IN4_PIN 1
 #define MAX_SPEED 600
 
 AccelStepper stepper(AccelStepper::FULL4WIRE, IN1_PIN, IN3_PIN, IN2_PIN, IN4_PIN);
@@ -52,8 +52,11 @@ void setup() {
 
   // WiFi setup
 #ifdef USE_STA_MODE
+  WiFi.mode(WIFI_STA);
+  WiFi.setTxPower(WIFI_POWER_7dBm);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
+    Serial.printf("Wifi status %d\n", WiFi.status());
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
