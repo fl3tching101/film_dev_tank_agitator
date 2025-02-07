@@ -16,10 +16,12 @@ const char *password = "password";
 const char *hostname = "dev_tank";
 
 // Stepper motor setup
-#define IN1_PIN 4
-#define IN2_PIN 3
-#define IN3_PIN 2
-#define IN4_PIN 1
+#define IN1_PIN     4
+#define IN2_PIN     3
+#define IN3_PIN     2
+#define IN4_PIN     1
+#define LED_PIN     8
+#define BUTTON_PIN  0
 #define MAX_SPEED 600
 
 AccelStepper stepper(AccelStepper::FULL4WIRE, IN1_PIN, IN3_PIN, IN2_PIN, IN4_PIN);
@@ -32,9 +34,12 @@ Preferences preferences;
 int rotationSpeed = 50; // Percentage of max speed
 int intervalTime = 15;  // Direction duration in seconds
 bool motorRunning = false;
+bool buttonPreviouslyPressed = false;
 unsigned long previousMillis = 0;
 
 void setupWebServer();
+void setWifiLED(bool on);
+void checkButton();
 
 void setup() {
   Serial.begin(115200);
@@ -50,16 +55,22 @@ void setup() {
   rotationSpeed = preferences.getInt("rotationSpeed", 50);
   intervalTime = preferences.getInt("intervalTime", 15);
 
+  // Pin setup
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT);
+
   // WiFi setup
 #ifdef USE_STA_MODE
+  setWifiLED(false);
   WiFi.mode(WIFI_STA);
-  WiFi.setTxPower(WIFI_POWER_7dBm);
+  WiFi.setTxPower(WIFI_POWER_15dBm);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.printf("Wifi status %d\n", WiFi.status());
+    Serial.printf("Wifi status %d\r\n", WiFi.status());
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
+  setWifiLED(true);
   Serial.println("Connected to WiFi");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
@@ -86,6 +97,17 @@ void setup() {
 }
 
 void loop() {
+  if(WiFi.status() != WL_CONNECTED)
+  {
+    Serial.printf("Wifi status %d\r\n", WiFi.status());
+    setWifiLED(false);
+  }
+  else
+  {
+    setWifiLED(true);
+  }
+
+  // TODO: Make this a FreeRTOS task, loop is running too slow
   if (motorRunning) {
     unsigned long currentMillis = millis();
     if (currentMillis - previousMillis >= intervalTime * 1000) {
@@ -96,6 +118,7 @@ void loop() {
     }
     stepper.runSpeed();
   }
+  checkButton();
 }
 
 void setupWebServer() {
@@ -124,7 +147,7 @@ void setupWebServer() {
     }
     request->send(200, "text/plain", "OK");
     stepper.setSpeed(map(rotationSpeed, 0, 100, 0, MAX_SPEED));
-    Serial.printf("Set rotation speed to %d%\nSet interval time to %ds\n", rotationSpeed, intervalTime);
+    Serial.printf("Set rotation speed to %d%\r\nSet interval time to %ds\r\n", rotationSpeed, intervalTime);
   });
 
   // Handle start button
@@ -163,4 +186,36 @@ void setupWebServer() {
   });
 
   server.begin();
+}
+
+void setWifiLED(bool on)
+{
+  if(on)
+  {
+    digitalWrite(LED_PIN, LOW);
+  }
+  else
+  {
+    digitalWrite(LED_PIN, HIGH);
+  }
+}
+
+void checkButton()
+{
+  int buttonState = digitalRead(BUTTON_PIN);
+  if(HIGH == buttonState && !buttonPreviouslyPressed)
+  {
+    delay(10);
+    if(HIGH == digitalRead(BUTTON_PIN))
+    {
+      motorRunning = !motorRunning;
+      Serial.printf("Motor %s\r\n", motorRunning ? "started" : "stopped");
+      buttonPreviouslyPressed = true;
+    }
+  }
+  else
+  if(LOW == buttonState && buttonPreviouslyPressed)
+  {
+    buttonPreviouslyPressed = false;
+  }
 }
