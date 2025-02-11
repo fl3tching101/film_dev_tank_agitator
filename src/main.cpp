@@ -40,6 +40,7 @@ unsigned long previousMillis = 0;
 void setupWebServer();
 void setWifiLED(bool on);
 void checkButton();
+void motorThread(void *params);
 
 void setup() {
   Serial.begin(115200);
@@ -92,6 +93,9 @@ void setup() {
     stepper.setMaxSpeed(MAX_SPEED);
     stepper.setSpeed(map(rotationSpeed, 0, 100, 0, MAX_SPEED));
 
+    // Create a FreeRTOS task for motor control
+    xTaskCreate(motorThread, "MotorControl", 2048, NULL, 1, NULL);
+
   // Start web server
   setupWebServer();
 }
@@ -107,18 +111,8 @@ void loop() {
     setWifiLED(true);
   }
 
-  // TODO: Make this a FreeRTOS task, loop is running too slow
-  if (motorRunning) {
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= intervalTime * 1000) {
-      previousMillis = currentMillis;
-      // Reverse direction
-      stepper.setSpeed(-stepper.speed());
-      Serial.println("Direction changed");
-    }
-    stepper.runSpeed();
-  }
-  checkButton();
+  // TODO: Yeah this was connected to +5v... connect to 3.3v and try again
+  //checkButton();
 }
 
 void setupWebServer() {
@@ -188,6 +182,28 @@ void setupWebServer() {
   server.begin();
 }
 
+void motorThread(void *params)
+{
+  (void)params;
+
+  for(;;)
+  {
+    if (motorRunning) {
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillis >= intervalTime * 1000) {
+        previousMillis = currentMillis;
+        // Reverse direction
+        stepper.setSpeed(-stepper.speed());
+        Serial.println("Direction changed");
+      }
+      stepper.runSpeed();
+    }
+
+    // Loops every 1ms
+    vTaskDelay( pdMS_TO_TICKS(1) );
+  }
+}
+
 void setWifiLED(bool on)
 {
   if(on)
@@ -205,7 +221,7 @@ void checkButton()
   int buttonState = digitalRead(BUTTON_PIN);
   if(HIGH == buttonState && !buttonPreviouslyPressed)
   {
-    delay(10);
+    delay(50);
     if(HIGH == digitalRead(BUTTON_PIN))
     {
       motorRunning = !motorRunning;
